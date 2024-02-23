@@ -204,7 +204,7 @@ def create_task():
         agent_id = request.form['selected_agent']
         task_name = request.form['task_name']
         task_description = request.form['task_description']
-        flash(user_id,agent_id,task_description,task_name)
+        # flash(user_id,agent_id,task_description,task_name)
         conn = create_connection()
         cursor = conn.cursor()
         try:
