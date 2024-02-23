@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Set API Key</title>
+</head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f4;
+    }
+
+    h2 {
+        color: #333;
+    }
+
+    form {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    label {
+        font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="submit"],
+    select {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        box-sizing: border-box;
+    }
+
+    input[type="radio"] {
+        margin-right: 5px;
+    }
+
+    input[type="submit"] {
+        background-color: #0859d7;
+        color: #fff;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    input[type="submit"]:hover {
+        background-color: #7699d1;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th,
+    td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    .task-actions {
+        display: flex;
+        align-items: center;
+    }
+
+    .task-actions form {
+        margin-right: 5px;
+    }
+
+    .radio-group {
+        display: flex;
+        margin-bottom: 10px;
+    }
+
+    .radio-group label {
+        margin-right: 15px;
+    }
+
+    .button-group {
+        margin-top: 10px;
+    }
+
+    .button-group button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background-color: #0859d7;
+        color: #fff;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .button-group button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    #loadingIndicator {
+        margin-top: 10px;
+        display: none;
+    }
+</style>
+<body>
+    <div>
+        <img  style="width: 8%;
+        display: block;
+        margin: auto;" src="{{ url_for('static', filename='logo.png') }}" alt=""></div>
+        <h1  style="text-align: center;font-size: 38px;
+        font-family: cursive;">CrewAI By <a href="I8IS">I8IS</a></h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% if not session.user_id %}
+    <form action="/set_api_key" method="post">
+        <label for="openai_api_key">OpenAI API Key:</label><br>
+        <input type="text" id="openai_api_key" name="openai_api_key" required><br>
+        <input type="submit" value="Set API Key">
+    </form>
+    {% endif %}
+
+    <h2>Add a CrewAI Agent</h2>
+    <form action="/create_agent" method="post">
+        <label for="role">Role:</label><br>
+        <p style="font-size: 12px; padding: 0; margin: 0;">Think of it like a job title for the AI. What should we call
+            the AI's position or function? Examples could be "Chat Assistant" or "Task Manager."</p>
+        <input type="text" id="role" name="role" required><br>
+
+        <label for="goal">Goal:</label><br>
+        <p style="font-size: 12px; padding: 0; margin: 0;">What's the main thing we want the AI to achieve? Is it
+            helping people with tasks, providing information, or something else? Describe the AI's primary purpose or
+            objective.</p>
+        <input type="text" id="goal" name="goal" required><br>
+
+        <label>Verbose:</label><br>
+        <div style="display: flex;width: 20px ;">
+            <input type="radio" id="verbose_true" name="verbose" value="true" required>
+            <label style="margin-top:0px;" for="verbose_true">True</label><br>
+        </div>
+        <div style="display: flex;width: 20px ;">
+            <input type="radio" id="verbose_false" name="verbose" value="false" required>
+            <label style="margin-top:0px;" for="verbose_false">False</label><br>
+        </div>
+
+
+        <label for="backstory">Backstory:</label><br>
+        <p style="font-size: 12px; padding: 0; margin: 0;">Imagine the AI as a character. What's its background story or
+            history? This could include details about how it was trained, what data it learned from, or any unique
+            features that make it special.</p>
+        <input type="text" id="backstory" name="backstory" required><br>
+
+        <label>Allow Delegation:</label><br>
+        <div style="display: flex;width: 20px ;">
+            <input type="radio" id="delegation_true" name="allow_delegation" required value="true">
+            <label style="margin-top:0px;" for="delegation_true">True</label><br>
+        </div>
+
+        <div style="display: flex;width: 20px ;">
+            <input type="radio" id="delegation_false" name="allow_delegation" required value="false">
+            <label style="margin-top:0px;" for="delegation_false">False</label><br>
+
+        </div>
+
+        <input type="submit" value="Add Agent">
+    </form>
+
+
+    <h2>Assign a Task for CrewAI Agent</h2>
+    <form action="/create_task" method="post">
+        <label for="selected_agent">Select Agent:</label><br>
+        <select id="selected_agent" name="selected_agent" required>
+            <option value="">Select an Agent</option>
+            {% for agent in agents %}
+            <option value="{{ agent.id }}">{{ agent.role }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label for="task_name">Task Name:</label><br>
+        <input type="text" id="task_name" name="task_name" required><br>
+
+        <label for="task_description">Task Description:</label><br>
+        <input type="text" id="task_description" name="task_description" required><br>
+
+        <input type="submit" value="Add Task">
+    </form>
+
+
+
+    <h2>Your Tasks</h2>
+
+    <table>
+        <tr>
+            <th>Task Name</th>
+            <th>Description</th>
+            <th>Assigned Agent</th>
+            <th>Agent Id</th>
+            <th>Actions</th>
+        </tr>
+        {% for task in tasks %}
+        <tr>
+            <td>
+                <input type="checkbox" name="selected_tasks" value="{{ task.id }}">
+            </td>
+            <td>{{ task.task_name }}</td>
+            <td>{{ task.task_description }}</td>
+            <td>{{ task.agent_id }}</td>
+            <td>
+
+                <form action="/reassign_task" method="post">
+                    <input type="hidden" name="task_id" value="{{ task.id }}">
+                    <select name="new_agent_id" style="display: none;">
+                        <option value="">-- Select Agent --</option>
+                        {% for agent in agents %}
+                        <option value="{{ agent.id }}" {% if agent.id==task.agent_id %} selected {% endif %}>{{
+                            agent.role }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="submit" value="Reassign">
+                </form>
+                <form action="/delete_task" method="post">
+                    <input type="hidden" name="task_id" value="{{ task.id }}">
+                    <input type="submit" value="Delete">
+                </form>
+            </td>
+
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Select Output Type:</h3>
+    <div class="radio-group">
+    <div>
+        <input type="radio" id="text_output" name="output_type" value="text" checked>
+        <label for="text_output">Text Output</label>
+    </div>
+    <div>
+        <input type="radio" id="console_output" name="output_type" value="console">
+        <label for="console_output">Console Output</label>
+    </div>
+    <div>
+        <input type="radio" id="both_output" name="output_type" value="both">
+        <label for="both_output">Both</label>
+    </div>
+    </div>
+
+    <div class="button-group">
+        <button id="executeButton" onclick="executeSelectedTasks()" disabled>Execute</button>
+        <div id="loadingIndicator">Execution in progress, please wait...</div>
+    </div>
+
+    <div id="result"></div>
+
+
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var checkboxes = document.querySelectorAll('input[type="checkbox"][name="selected_tasks"]');
+        var button = document.getElementById('executeButton');
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.addEventListener('change', function () {
+                var anyChecked = Array.from(checkboxes).some(c => c.checked);
+                button.disabled = !anyChecked;
+            });
+        });
+    });
+
+    function executeSelectedTasks() {
+        var selectedTasks = [];
+        document.querySelectorAll('input[name="selected_tasks"]:checked').forEach(function (checkbox) {
+            selectedTasks.push(checkbox.value);
+        });
+        document.getElementById('loadingIndicator').style.display = 'block';
+
+        // Get the selected output type
+        const outputType = document.querySelector('input[name="output_type"]:checked').value;
+
+        fetch('/execute_tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 'selected_tasks': selectedTasks }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingIndicator').style.display = 'none';
+
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    // Handle error
+                } else {
+                    // Output result based on the selected type
+                    if (outputType === 'text' || outputType === 'both') {
+                        document.getElementById('result').innerText = data.result;
+                    }
+                    if (outputType === 'console' || outputType === 'both') {
+                        console.log(data.result);
+                    }
+
+                    // Download the ZIP file
+                    downloadZip(data.encoded_zip);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                document.getElementById('loadingIndicator').style.display = 'none';
+
+                // Handle error
+            });
+    }
+
+    function downloadZip(encodedZip) {
+        const zipBlob = base64ToBlob(encodedZip, 'application/zip');
+        const url = window.URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'results_and_code.zip';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    }
+
+    function base64ToBlob(base64, mimeType) {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        return new Blob([byteArray], { type: mimeType });
+    }
+
+
+
+</script>
+
+</html>
